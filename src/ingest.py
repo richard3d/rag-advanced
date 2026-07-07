@@ -4,6 +4,7 @@ from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from embed import embed_text_file
 from query import query_rag
+from docling.document_converter import DocumentConverter
 
 
 class FileObserver(FileSystemEventHandler):
@@ -17,7 +18,10 @@ class FileObserver(FileSystemEventHandler):
     async def _handle(self, path):
         try:
             print(f"Processing content of {os.path.basename(path)}...")
-            await embed_text_file(path)
+            # await embed_text_file(path)
+            converter = DocumentConverter()
+            result = converter.convert(os.path.basename(path))
+            print(result.document.export_to_markdown())
             print(f"✅ Successfully processed {os.path.basename(path)}")
         except Exception as e:
             print(f"Error processing file: {e}")

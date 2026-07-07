@@ -4,7 +4,7 @@ FILE_OBSERVER_DIRECTORY = os.environ.get("FILE_OBSERVER_DIRECTORY", "/app/docs")
 # Ensure the connection string uses the psycopg SQLAlchemy dialect, this gives us access to async operations
 DB_CONNECTION_STR = os.environ.get(
     "DB_CONNECTION_STR",
-    "postgresql+psycopg://postgres:password@db:5432/rag-intermediate",
+    "postgresql+psycopg://postgres:password@db:5432/rag-advanced",
 )
 EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "nomic-embed-text")
 # Defaults to 768 to match dimensions for the default model nomic-embed-text

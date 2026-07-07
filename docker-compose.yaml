@@ -1,4 +1,4 @@
-name: rag-intermediate
+name: rag-advanced
 
 services:
   ollama:
@@ -53,13 +53,13 @@ services:
       - ollama
   
   db:
-    image: pgvector/pgvector:pg17
-    container_name: pgvector
+    image: paradedb/paradedb:latest
+    container_name: paradedb
     restart: always
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: rag-intermediate
+      POSTGRES_DB: rag-advanced
     ports:
       - "5432:5432"
     volumes:
