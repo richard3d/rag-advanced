@@ -1,10 +1,14 @@
 import os
 import asyncio
+from docling.chunking import HybridChunker
+from docling.datamodel.base_models import InputFormat 
+from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions
+from docling.document_converter import DocumentConverter, PdfFormatOption
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from embed import embed_text_file
-from query import query_rag
-from docling.document_converter import DocumentConverter
+from config import LITELLM_API_KEY, LITELLM_BASE_URL
+
 
 
 class FileObserver(FileSystemEventHandler):
@@ -18,9 +22,13 @@ class FileObserver(FileSystemEventHandler):
     async def _handle(self, path):
         try:
             print(f"Processing content of {os.path.basename(path)}...")
-            # await embed_text_file(path)
-            converter = DocumentConverter()
-            result = converter.convert(os.path.basename(path))
+           
+            converter = build_converter()
+            result = converter.convert(path)
+            chunker = HybridChunker(max_tokens=1024)
+            for chunk in chunker.chunk(result.document):
+                text = chunker.contextualize(chunk)
+                await embed_text_file(text)
             print(result.document.export_to_markdown())
             print(f"✅ Successfully processed {os.path.basename(path)}")
         except Exception as e:
@@ -39,3 +47,23 @@ def start_file_observer(watch_directory):
     print(f"🚀 Starting file observer on {watch_directory}...")
     observer.start()
     return observer
+
+def build_converter():
+    pipeline_options = PdfPipelineOptions()
+    pipeline_options.do_picture_description = True
+    pipeline_options.generate_picture_images = True
+    # Required to use LiteLLM running remotely in docker container
+    pipeline_options.enable_remote_services=True
+    pipeline_options.picture_description_options = PictureDescriptionApiOptions(
+        url=f"{LITELLM_BASE_URL}/chat/completions",
+        params={"model": "llama3.2-vision"},
+        headers={"Authorization": f"Bearer {LITELLM_API_KEY}"},
+        prompt="Describe this image in 1-2 sentences, focusing on any data, diagrams, or text it contains.",
+        timeout=90,
+    )
+
+    return DocumentConverter(
+        format_options={
+            InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+        }
+    )

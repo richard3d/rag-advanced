@@ -34,7 +34,7 @@ services:
       - ollama-data:/root/.ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
-    entrypoint: ["/bin/sh", "-c", "ollama pull llama3.2 && ollama pull nomic-embed-text"]
+    entrypoint: ["/bin/sh", "-c", "ollama pull llama3.2 && ollama pull nomic-embed-text && ollama pull llama3.2-vision"]
     depends_on:
       ollama:
         condition: service_healthy
