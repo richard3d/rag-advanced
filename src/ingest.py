@@ -14,6 +14,10 @@ from config import LITELLM_API_KEY, LITELLM_BASE_URL
 
 
 class FileObserver(FileSystemEventHandler):
+    def __init__(self):
+        super().__init__()
+        self.converter = build_converter()
+
     def on_created(self, event):
         if event.is_directory:
             return
@@ -24,9 +28,7 @@ class FileObserver(FileSystemEventHandler):
     async def _handle(self, path):
         try:
             print(f"Processing content of {os.path.basename(path)}...")
-           
-            converter = build_converter()
-            result = converter.convert(path)
+            result = self.converter.convert(path)
             chunker = HybridChunker(max_tokens=512)
             logger.info("chunking...")
             texts = [chunker.contextualize(chunk) for chunk in chunker.chunk(result.document)]
