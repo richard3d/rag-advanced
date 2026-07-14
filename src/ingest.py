@@ -1,22 +1,24 @@
 import os
 import asyncio
 from docling.chunking import HybridChunker
-from docling.datamodel.base_models import InputFormat 
+from docling.datamodel.base_models import InputFormat
 from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling_core.transforms.chunker.tokenizer.huggingface import HuggingFaceTokenizer
+from transformers import AutoTokenizer
 from loguru import logger
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from embed import embed_chunks
 from config import LITELLM_API_KEY, LITELLM_BASE_URL
 
-
-
+CHUNKER_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
 
 class FileObserver(FileSystemEventHandler):
     def __init__(self):
         super().__init__()
         self.converter = build_converter()
+        self.chunker = build_chunker()
 
     def on_created(self, event):
         if event.is_directory:
@@ -29,9 +31,8 @@ class FileObserver(FileSystemEventHandler):
         try:
             print(f"Processing content of {os.path.basename(path)}...")
             result = self.converter.convert(path)
-            chunker = HybridChunker(max_tokens=512)
             logger.info("chunking...")
-            texts = [chunker.contextualize(chunk) for chunk in chunker.chunk(result.document)]
+            texts = [self.chunker.contextualize(chunk) for chunk in self.chunker.chunk(result.document)]
             await embed_chunks(texts, path)
             print(result.document.export_to_markdown())
             print(f"✅ Successfully processed {os.path.basename(path)}")
@@ -71,3 +72,16 @@ def build_converter():
             InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
         }
     )
+
+
+def build_chunker():
+    # Passing max_tokens directly to HybridChunker still calls
+    # get_default_tokenizer() internally to fetch sentence_bert_config.json
+    # from the HF Hub, even when overridden. Building the tokenizer ourselves
+    # with max_tokens set avoids that Hub call so this works with
+    # HF_HUB_OFFLINE=1.
+    hf_tokenizer = HuggingFaceTokenizer(
+        tokenizer=AutoTokenizer.from_pretrained(CHUNKER_MODEL),
+        max_tokens=512,
+    )
+    return HybridChunker(tokenizer=hf_tokenizer)

@@ -41,7 +41,7 @@ RUN uv run python -c "from transformers import AutoTokenizer; AutoTokenizer.from
 # Force offline mode now that models/tokenizers are baked in, so
 # from_pretrained() reads the local cache instead of phoning home on
 # every chunking call
-#ENV HF_HUB_OFFLINE=1
+ENV HF_HUB_OFFLINE=1
 
 COPY src/ .
 
