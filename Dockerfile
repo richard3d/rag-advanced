@@ -24,6 +24,9 @@ RUN uv sync --frozen --no-dev
 
 # Bake docling model weights into image so we do not
 # need to reach out to Hugging Face during each startup
+# HF_HUB_DISABLE_XET avoids the hf_xet CAS backend, which has been
+# returning 401 Unauthorized for anonymous downloads
+ENV HF_HUB_DISABLE_XET=1
 RUN uv run docling-tools models download
 ENV DOCLING_ARTIFACTS_PATH=/root/.cache/docling/models
 
@@ -34,6 +37,11 @@ ENV HF_HOME=/opt/hf-cache
 # It's a little hacky but it makes it so we do not need to download the Hugging Face
 # CLI as well.
 RUN uv run python -c "from transformers import AutoTokenizer; AutoTokenizer.from_pretrained('sentence-transformers/all-MiniLM-L6-v2')"
+
+# Force offline mode now that models/tokenizers are baked in, so
+# from_pretrained() reads the local cache instead of phoning home on
+# every chunking call
+#ENV HF_HUB_OFFLINE=1
 
 COPY src/ .
 

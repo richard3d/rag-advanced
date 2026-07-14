@@ -34,13 +34,15 @@ services:
       - ollama-data:/root/.ollama
     environment:
       - OLLAMA_HOST=http://ollama:11434
-    entrypoint: ["/bin/sh", "-c", "ollama pull llama3.2 && ollama pull nomic-embed-text && ollama pull llama3.2-vision"]
+    entrypoint: ["/bin/sh", "-c", "ollama pull llama3.2 && ollama pull nomic-embed-text && ollama pull qwen2.5vl:7b"]
     depends_on:
       ollama:
         condition: service_healthy
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    build:
+      context: ./litellm
+      dockerfile: Dockerfile
     container_name: litellm
     ports:
       - "4000:4000"

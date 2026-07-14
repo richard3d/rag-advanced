@@ -4,10 +4,12 @@ from docling.chunking import HybridChunker
 from docling.datamodel.base_models import InputFormat 
 from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescriptionApiOptions
 from docling.document_converter import DocumentConverter, PdfFormatOption
+from loguru import logger
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 from embed import embed_chunks
 from config import LITELLM_API_KEY, LITELLM_BASE_URL
+
 
 
 
@@ -25,7 +27,8 @@ class FileObserver(FileSystemEventHandler):
            
             converter = build_converter()
             result = converter.convert(path)
-            chunker = HybridChunker(max_tokens=1024)
+            chunker = HybridChunker(max_tokens=512)
+            logger.info("chunking...")
             texts = [chunker.contextualize(chunk) for chunk in chunker.chunk(result.document)]
             await embed_chunks(texts, path)
             print(result.document.export_to_markdown())
@@ -55,7 +58,7 @@ def build_converter():
     pipeline_options.enable_remote_services=True
     pipeline_options.picture_description_options = PictureDescriptionApiOptions(
         url=f"{LITELLM_BASE_URL}/chat/completions",
-        params={"model": "llama3.2-vision"},
+        params={"model": "qwen2.5vl"},
         headers={"Authorization": f"Bearer {LITELLM_API_KEY}"},
         prompt="Describe this image in 1-2 sentences, focusing on any data, diagrams, or text it contains.",
         timeout=90,
