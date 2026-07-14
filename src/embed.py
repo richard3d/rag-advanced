@@ -15,7 +15,7 @@ from config import (
 BATCH_SIZE = 50
 
 
-async def embed_text_file(file_path):
+def _build_store():
     rate_limiter = InMemoryRateLimiter(
         requests_per_second=EMBEDDING_REQUESTS_PER_SECOND
     )
@@ -23,7 +23,6 @@ async def embed_text_file(file_path):
         model=EMBEDDING_MODEL,
         openai_api_base=LITELLM_BASE_URL,
         openai_api_key=LITELLM_API_KEY,
-        rate_limiter=rate_limiter,
     )
     engine = create_async_engine(DB_CONNECTION_STR)
     store = PGVector(
@@ -31,6 +30,31 @@ async def embed_text_file(file_path):
         collection_name="documents",
         connection=engine,
     )
+    return engine, store
+
+
+async def embed_chunks(chunks: list[str], file_path: str):
+    engine, store = _build_store()
+
+    # Ensure tables/collection exist, then clear stale data for this file
+    await store.acreate_collection()
+    async with engine.begin() as conn:
+        await conn.execute(
+            text(
+                "DELETE FROM langchain_pg_embedding WHERE cmetadata->>'file_path' = :fp"
+            ),
+            {"fp": file_path},
+        )
+
+    for i in range(0, len(chunks), BATCH_SIZE):
+        batch = chunks[i : i + BATCH_SIZE]
+        await store.aadd_texts(
+            texts=batch, metadatas=[{"file_path": file_path}] * len(batch)
+        )
+
+
+async def embed_text_file(file_path):
+    engine, store = _build_store()
 
     # Ensure tables/collection exist, then clear stale data for this file
     await store.acreate_collection()

@@ -6,7 +6,7 @@ from docling.datamodel.pipeline_options import PdfPipelineOptions, PictureDescri
 from docling.document_converter import DocumentConverter, PdfFormatOption
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
-from embed import embed_text_file
+from embed import embed_chunks
 from config import LITELLM_API_KEY, LITELLM_BASE_URL
 
 
@@ -26,9 +26,8 @@ class FileObserver(FileSystemEventHandler):
             converter = build_converter()
             result = converter.convert(path)
             chunker = HybridChunker(max_tokens=1024)
-            for chunk in chunker.chunk(result.document):
-                text = chunker.contextualize(chunk)
-                await embed_text_file(text)
+            texts = [chunker.contextualize(chunk) for chunk in chunker.chunk(result.document)]
+            await embed_chunks(texts, path)
             print(result.document.export_to_markdown())
             print(f"✅ Successfully processed {os.path.basename(path)}")
         except Exception as e:

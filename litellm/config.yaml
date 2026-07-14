@@ -1,3 +1,9 @@
+litellm_settings:
+  # By default, if you pass an OpenAI-style parameter to downstream providers
+  # and they do not support it, Litellm will throw errors, so we disable that
+  # behavior
+  drop_params: true
+
 general_settings:
   master_key: sk-local
 model_list:

@@ -32,7 +32,6 @@ def retrieve_chunks(question: str, k: int = 3) -> list[str]:
         model=EMBEDDING_MODEL,
         openai_api_base=LITELLM_BASE_URL,
         openai_api_key=LITELLM_API_KEY,
-        rate_limiter=rate_limiter,
     )
     store = PGVector(
         embeddings=embedder,
